@@ -55,12 +55,12 @@ class VM(omg.storable.Storable):
 
     def create(self, base=None, cpus=None, ram=None, name=None, ip=None, 
         mac=None, vnc=None):
-        store = omg.store.Store()
+        self._store()
 
         if not name:
             print "Missing name"
             return 
-        if store.exists("Vms", "active", name):
+        if self.store.exists("Vms", "active", name):
             print "VM Already Exists"
             return
 

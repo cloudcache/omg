@@ -1,0 +1,29 @@
+Install dependencies:
+    apt-get install python-redis redis-server
+
+Configuration File:
+REDIS_HOST=127.0.0.1
+cat <<EOF
+{ 
+       "store_type": "redis",
+       "store_host": "$REDIS_HOST"
+}
+EOF
+
+Create directories:
+mkdir -p /var/lib/omg/{cow,base,domains.d}
+
+Create initial base image:
+TODO
+./omg base-create 'debian-squeeze'
+
+Setup database:
+
+./omg.py conf-set 'vm_default_ram' '512'
+./omg.py conf-set 'vm_default_cpus' '1'
+./omg.py conf-set 'vm_default_base' 'debian-squeeze'
+./omg.py conf-set 'hypervisor_uri' 'qemu:///system'
+./omg.py conf-set 'volume_type' 'qcow2'
+./omg.py conf-set 'image_path' '/var/lib/omg/cow'
+./omg.py conf-set 'base_path' '/var/lib/omg/base'
+./omg.py conf-set 'domain_xml_path' '/var/lib/omg/domains.d'

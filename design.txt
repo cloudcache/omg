@@ -1,0 +1,33 @@
+omg-node -
+    node daemon that provides interaction with the hypervisor.
+    responsible for:
+        spinning up vms
+        performing power operations
+        reporting vm status
+        setting up networking
+    depends on:
+        libvirt
+
+omg-controller -
+    controller daemon that manages nodes and provides scheduling of resource 
+    allocation.
+    responsible for:
+        telling nodes to perform actions
+        deciding which nodes to spin up new vms on
+    depends on:
+        redis (other data store options may be added later)
+
+omg-api -
+    api daemon that provides http api interface to omg
+    responsible for:
+        providing "REST" api for users.
+    depends on:
+
+omg-images -
+    disk image management daemon 
+    responsible for:
+        storing images
+        serving images to nodes for vm deployment
+    depends on:
+        
+    

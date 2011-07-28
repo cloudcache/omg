@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 import sys
-import os
-import subprocess
 import redis
-from copy import deepcopy
-from uuid import uuid4
 
 import omg
 

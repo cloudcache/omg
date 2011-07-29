@@ -1,3 +1,9 @@
+notes on the end goal of the system.
+
+omg-common -
+    python module implementing the core of the omg functionality used
+    by all the other components.
+
 omg-node -
     node daemon that provides interaction with the hypervisor.
     responsible for:

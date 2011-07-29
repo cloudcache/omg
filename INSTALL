@@ -1,29 +1,76 @@
+These instructions are for setting up an environment for omg. Currently the only
+supported hypervisor is kvm, and the only datastore supported is redis. The 
+hypvisor and omg tools must reside on the same server but the datastore can be
+on another host is so desired.
+
 Install dependencies:
-    apt-get install python-redis redis-server
+    apt-get install python-redis redis-server python-libvirt qemu-kvm libvirt-bin
+
+Configure redis:
+    Since you probably want your database to persist and as currently there is no 
+    way to repopulate the database if it is lost. You will want to enable 
+	appendonly mode in redis.conf.
+
+    echo "appendonly yes" >> /etc/redis/redis.conf
+    /etc/init.d/redis restart
+
+Create directories:
+    mkdir -p /var/lib/omg/{cow,base,domains}
+
+Install omg tools:
+    cd /var/lib/omg
+    git clone http://github.com/nils42/omg.git bin
+	ln -s /var/lib/omg/bin/omg.py /usr/bin/omg
 
 Configuration File:
 REDIS_HOST=127.0.0.1
-cat <<EOF
+cat > /var/lib/omg/bin/omg.conf <<EOF
 { 
        "store_type": "redis",
        "store_host": "$REDIS_HOST"
 }
 EOF
 
-Create directories:
-mkdir -p /var/lib/omg/{cow,base,domains.d}
-
-Create initial base image:
-TODO
-./omg base-create 'debian-squeeze'
-
 Setup database:
 
-./omg.py conf-set 'vm_default_ram' '512'
-./omg.py conf-set 'vm_default_cpus' '1'
-./omg.py conf-set 'vm_default_base' 'debian-squeeze'
-./omg.py conf-set 'hypervisor_uri' 'qemu:///system'
-./omg.py conf-set 'volume_type' 'qcow2'
-./omg.py conf-set 'image_path' '/var/lib/omg/cow'
-./omg.py conf-set 'base_path' '/var/lib/omg/base'
-./omg.py conf-set 'domain_xml_path' '/var/lib/omg/domains.d'
+    # If you want a different default ram or cpu values change these lines
+    omg conf-set 'vm_default_ram' '512'
+    omg conf-set 'vm_default_cpus' '1'
+    # The rest of these options should be pretty static and not need to be changed
+    omg conf-set 'hypervisor_uri' 'qemu:///system'
+    omg conf-set 'volume_type' 'qcow2'
+    omg conf-set 'image_path' '/var/lib/omg/cow'
+    omg conf-set 'base_path' '/var/lib/omg/base'
+    omg conf-set 'domain_xml_path' '/var/lib/omg/domains'
+
+Create initial base image:
+    example for Debian Squeeze:
+
+     # Create qcow2 image
+     qemu-img create -f qcow2 base.img 10G
+     # Download debian install cd
+     wget http://cdimage.debian.org/debian-cd/6.0.2.1/amd64/iso-cd/debian-6.0.2.1-amd64-netinst.iso
+     # Start a vm booted off the iso with the qcow2 image as the hdd
+     kvm -m 256 -cdrom debian-6.0.2.1-amd64-netinst.iso -drive file=base.img -boot d -net nic -net user -nographic -vnc :0
+     # Connect to vnc console
+     vncviewer 127.0.0.1 :0
+
+    follow standard installation
+     # Make sure to configure the NIC for dhcp
+
+    preform post install tasks
+     # Start vm booted off qcow2 image
+     kvm -m 256 -drive file=base.img -boot c -net nic -net user -nographic -vnc :0
+     # Connect to vnc console
+     vncviewer 127.0.0.1 :0
+
+    install the packages you want with at the very least:
+     apt-get install openssh-server
+
+    remove udev network rules (VERY IMPORTANT):
+     rm -rf /etc/udev/rules.d/70-persistent-net.rules
+
+    add the image to omg:
+    omg base-create 'debian-squeeze' 'base.img'
+    set new image as default base for new vms:
+    omg conf-set 'vm_default_base' 'debian-squeeze'

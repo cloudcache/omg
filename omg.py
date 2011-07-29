@@ -2,18 +2,32 @@
 import sys
 import redis
 import shutil
+import os.path
+import inspect
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(sys.argv[0])))
 
 import omg
 
-def main(argv):
-    store = omg.store.Store()
-    config = omg.config.Config()
+class Command(object):
+    def __init__(self):
+        self.config = omg.config.Config()
+        self.store = omg.store.Store()
 
-    if argv[0] == 'base-create':
+    @classmethod
+    def help(cls):
+        l = get_commands(cls)
+        for i in l:
+            args = " ".join(get_args(getattr(cls, i)))
+            print '\t%s %s %s' % (cls.__name__.lower(), i, args)
+
+
+class Base(Command):
+    def create(self, name, path):
         img = omg.volume.Volume()
-        img['name'] = argv[1]
+        img['name'] = name
 
-        if store.exists("Images", "base", img['name']):
+        if self.store.exists("Images", "base", img['name']):
             print "base image already exists"
             return
 
@@ -24,12 +38,22 @@ def main(argv):
         base = omg.images.Images('base')
         base[img['name']] = img.key
         base.save()
-        shutil.copy(argv[2], "%s/%s.img" % (config['base_path'], img.key))
-    elif argv[0] == 'base-list':
+        shutil.copy(path, "%s/%s.img" % (self.config['base_path'], img.key))
+
+    def list(self):
         imgs = omg.images.Images('base')
         print imgs
 
-    elif argv[0] == 'vm-list':
+    def delete(self, name):
+        print "name: ", name
+
+
+class Image(Command):
+    pass
+
+
+class Vm(Command):
+    def list(self):
         tpl = "{name:20}{uuid:40}{cpus:6}{ram:5}{vnc:8}{state:7}{ip:5}"
         vms = omg.vms.Vms('active')
         print tpl.format(name="NAME", uuid="UUID", cpus="CPUS", ram="RAM",
@@ -44,35 +68,104 @@ def main(argv):
             if t['ip'] == 'None':
                 t['ip'] = 'DHCP'
             print tpl.format(**t)
-    elif argv[0] == 'vm-start':
-        vm = omg.vm.VM(key=argv[1])
-        print vm.start()
-    elif argv[0] == 'vm-restart':
-        vm = omg.vm.VM(key=argv[1])
-        print vm.stop()
-        print vm.start()
-    elif argv[0] == 'vm-stop':
-        vm = omg.vm.VM(key=argv[1])
-        print vm.stop()
-    elif argv[0] == 'vm-destroy':
-        vm = omg.vm.VM(key=argv[1])
-        print vm.destroy()
-    elif argv[0] == 'vm-delete':
-        vm = omg.vm.VM(key=argv[1])
-        print vm.delete()
-    elif argv[0] == 'vm-create':
+
+    def create(self, name):
         vm = omg.vm.VM()
-        vm.create(name=argv[1])
+        vm.create(name=name)
 
-    elif argv[0] == 'conf-set':
-        config[argv[1]] = argv[2]
-        config.save()
-        print config[argv[1]]
-    elif argv[0] == 'conf-get':
-        print config
+    def restart(self, name):
+        vm = omg.vm.VM(key=name)
+        print vm.stop()
+        print vm.start()
 
-    else:
-        print "unknown/missing command"
+    def start(self, name):
+        vm = omg.vm.VM(key=name)
+        print vm.start()
+
+    def stop(self, name):
+        vm = omg.vm.VM(key=name)
+        print vm.stop()
+
+    def destroy(self, name):
+        vm = omg.vm.VM(key=name)
+        print vm.destroy()
+
+    def delete(self, name):
+        vm = omg.vm.VM(key=name)
+        print vm.delete()
+
+
+class Config(Command):
+    def set(self, key, value):
+        self.config[key] = value
+        self.config.save()
+        print self.config[key]
+
+    def get(self):
+        print self.config
+
+
+class Help(Command):
+    @classmethod
+    def help(cls):
+        print '\thelp'
+        for k,v in COMMAND_MAP.items():
+            if k != 'help':
+                v.help()
+
+
+COMMAND_MAP = {
+    'base': Base,
+    'image': Image,
+    'vm': Vm,
+    'config': Config,
+    'help': Help
+}
+
+def arg_count(fn):
+    t = inspect.getargspec(fn)
+    return len(t.args)-1
+
+def get_args(fn):
+    t = inspect.getargspec(fn)
+    return t.args[1:]
+
+def get_commands(kls):
+    return [x for x in dir(kls) if x[0] != '_' and callable(getattr(kls,x))]
+
+def help(kls):
+    kls.help()
+    sys.exit(1)
+
+def main(argv):
+    if len(argv) < 1:
+        help(Help)
+
+    cmd = argv.pop(0)
+
+    try:
+        command = COMMAND_MAP[cmd]()
+    except KeyError:
+        print "Unknown command"
+        help(Help)
+
+    try:
+        try:
+            sub = argv.pop(0)
+        except IndexError:
+            print "Missing action"
+            help(command)
+        fn = getattr(command, sub)
+        c = len(argv)
+        a = arg_count(fn)
+        if c != a:
+            print "Not enough" if c < a else "Too many",
+            print "Arguments"
+            help(command)
+        fn(*argv)
+    except AttributeError:
+        print "Unknown action"
+        help(Help)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

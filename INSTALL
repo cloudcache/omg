@@ -34,14 +34,14 @@ EOF
 Setup database:
 
     # If you want a different default ram or cpu values change these lines
-    omg conf-set 'vm_default_ram' '512'
-    omg conf-set 'vm_default_cpus' '1'
+    omg config set 'vm_default_ram' '512'
+    omg config set 'vm_default_cpus' '1'
     # The rest of these options should be pretty static and not need to be changed
-    omg conf-set 'hypervisor_uri' 'qemu:///system'
-    omg conf-set 'volume_type' 'qcow2'
-    omg conf-set 'image_path' '/var/lib/omg/cow'
-    omg conf-set 'base_path' '/var/lib/omg/base'
-    omg conf-set 'domain_xml_path' '/var/lib/omg/domains'
+    omg config set 'hypervisor_uri' 'qemu:///system'
+    omg config set 'volume_type' 'qcow2'
+    omg config set 'image_path' '/var/lib/omg/cow'
+    omg config set 'base_path' '/var/lib/omg/base'
+    omg config set 'domain_xml_path' '/var/lib/omg/domains'
 
 Create initial base image:
     example for Debian Squeeze:
@@ -71,6 +71,6 @@ Create initial base image:
      rm -rf /etc/udev/rules.d/70-persistent-net.rules
 
     add the image to omg:
-    omg base-create 'debian-squeeze' 'base.img'
+     omg base create 'debian-squeeze' 'base.img'
     set new image as default base for new vms:
-    omg conf-set 'vm_default_base' 'debian-squeeze'
+     omg config set 'vm_default_base' 'debian-squeeze'

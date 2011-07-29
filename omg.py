@@ -12,7 +12,6 @@ import omg
 
 class Command(object):
     def __init__(self):
-        global BINPATH
         self.config = omg.config.Config(BINPATH)
         self.store = omg.store.Store()
 

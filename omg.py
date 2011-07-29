@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import redis
+import shutil
 
 import omg
 
@@ -20,9 +21,10 @@ def main(argv):
         print "base uuid: %s" % img.key
         print img
         print img.key
-        base = Images('base')
+        base = omg.images.Images('base')
         base[img['name']] = img.key
         base.save()
+        shutil.copy(argv[2], "%s/%s.img" % (config['base_path'], img.key))
     elif argv[0] == 'base-list':
         imgs = omg.images.Images('base')
         print imgs

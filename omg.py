@@ -5,13 +5,15 @@ import shutil
 import os.path
 import inspect
 
-sys.path.insert(0, os.path.dirname(os.path.realpath(sys.argv[0])))
+BINPATH = os.path.dirname(os.path.realpath(sys.argv[0]))
+sys.path.insert(0, BINPATH)
 
 import omg
 
 class Command(object):
     def __init__(self):
-        self.config = omg.config.Config()
+        global BINPATH
+        self.config = omg.config.Config(BINPATH)
         self.store = omg.store.Store()
 
     @classmethod

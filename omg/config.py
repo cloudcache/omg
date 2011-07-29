@@ -12,12 +12,15 @@ class Config(omg.storable.Storable):
         file.
     '''
     __state = {}
-    def __init__(self):
-        if self.__state:
-            self.__dict__ = self.__state
+    def __init__(self, path=None):
+        if Config.__state:
+            self.__dict__ = Config.__state
         else:
-            with open('omg.conf') as f:
+            if not path:
+                path = '.'
+            with open('%s/omg.conf' % path) as f:
                 self.cdict = json.loads("".join(f.readlines()))
+            Config.__state = self.__dict__
             super(Config, self).__init__('global')
 
     def __getitem__(self, key):

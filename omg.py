@@ -19,8 +19,10 @@ class Command(object):
     def help(cls):
         l = get_commands(cls)
         for i in l:
-            args = " ".join(get_args(getattr(cls, i)))
-            print '\t%s %s %s' % (cls.__name__.lower(), i, args)
+            args = "> <".join(get_args(getattr(cls, i)))
+            if args:
+                args = "<%s>" % args
+            print >> sys.stderr, '\t%s %s %s' % (cls.__name__.lower(), i, args)
 
 
 class Base(Command):
@@ -109,7 +111,7 @@ class Config(Command):
 class Help(Command):
     @classmethod
     def help(cls):
-        print '\thelp'
+        print >> sys.stderr, '\thelp'
         for k,v in COMMAND_MAP.items():
             if k != 'help':
                 v.help()
@@ -134,39 +136,37 @@ def get_args(fn):
 def get_commands(kls):
     return [x for x in dir(kls) if x[0] != '_' and callable(getattr(kls,x))]
 
-def help(kls):
+def help(msg, kls):
+    print >> sys.stderr, "ERROR:", msg
     kls.help()
     sys.exit(1)
 
 def main(argv):
     if len(argv) < 1:
-        help(Help)
+        help("Missing Command", Help)
 
     cmd = argv.pop(0)
 
     try:
         command = COMMAND_MAP[cmd]()
     except KeyError:
-        print "Unknown command"
-        help(Help)
+        help("Unknown Command", Help)
 
     try:
         try:
             sub = argv.pop(0)
         except IndexError:
-            print "Missing action"
-            help(command)
+            help("Missing Action", command)
         fn = getattr(command, sub)
         c = len(argv)
         a = arg_count(fn)
         if c != a:
-            print "Not enough" if c < a else "Too many",
-            print "Arguments"
-            help(command)
+            msg = "Not enough" if c < a else "Too many"
+            msg +="Arguments"
+            help(msg, command)
         fn(*argv)
     except AttributeError:
-        print "Unknown action"
-        help(Help)
+        help("Unknown Action", Help)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

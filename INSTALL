@@ -12,7 +12,7 @@ Configure redis:
 	appendonly mode in redis.conf.
 
     echo "appendonly yes" >> /etc/redis/redis.conf
-    /etc/init.d/redis restart
+    /etc/init.d/redis-server restart
 
 Create directories:
     mkdir -p /var/lib/omg/{cow,base,domains}

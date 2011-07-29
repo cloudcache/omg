@@ -1,0 +1,4 @@
+{ 
+    "store_type": "redis",
+    "store_host": "127.0.0.1"
+}

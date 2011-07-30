@@ -34,7 +34,10 @@ class Command(object):
                 args = "<%s>" % args
             if name == 'help':
                 cmds = ''
-            print >> sys.stderr, '    %s %s %s' % (name, cmd, args)
+            opt = ''
+            for l in reversed(get_optional(func)):
+                    opt = '[<%s> %s]' % (l, opt)
+            print >> sys.stderr, '    %s %s %s %s' % (name, cmd, args, opt)
             print >> sys.stderr, '        ', func.__doc__.strip()
 
 
@@ -92,10 +95,10 @@ class Vm(Command):
                 temp['ip'] = 'DHCP'
             print tpl.format(**temp)
 
-    def create(self, name):
+    def create(self, name, ram=None, cpus=None, base=None):
         ''' Create a new vm. '''
         vm = omg.vm.VM()
-        vm.create(name=name)
+        vm.create(name=name, ram=ram, cpus=cpus, base=base)
 
     def restart(self, name):
         ''' Restart a vm. '''
@@ -159,12 +162,23 @@ COMMAND_MAP = {
 def arg_count(func):
     ''' Get number of arguments for a function '''
     temp = inspect.getargspec(func)
-    return len(temp.args)-1
+    amax = len(temp.args) - 1
+    amin = amax-len(temp.defaults) if temp.defaults else amax
+    return (amin, amax)
 
 def get_args(func):
     ''' Get argument names '''
     temp = inspect.getargspec(func)
-    return temp.args[1:]
+    optc = len(temp.defaults) if temp.defaults else 0
+    return temp.args[1:-optc]
+
+def get_optional(func):
+    ''' Get optional arguments '''
+    temp = inspect.getargspec(func)
+    if temp.defaults:
+        return temp.args[-len(temp.defaults):]
+    else:
+        return [] 
 
 def get_commands(kls):
     ''' Get class function names '''
@@ -198,12 +212,13 @@ def main(argv):
             help("Missing Action", command)
         func = getattr(command, sub)
         count = len(argv)
-        args = arg_count(fn)
-        if count != args:
-            msg = "Not enough" if count < args else "Too many"
-            msg +="Arguments"
+        amin, amax = arg_count(func)
+        if amin <= count <= amax:
+            func(*argv)
+        else:
+            msg = "Not enough" if count < amin else "Too many"
+            msg +=" Arguments"
             help(msg, command)
-        func(*argv)
     except AttributeError:
         help("Unknown Action", Help)
 

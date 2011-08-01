@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+import sys
+import time
+
+sys.path.insert(0, '../')
+
+from omg.daemonize import Daemon
+from omg.rpc import Listener
+from omg.core import Api
+
+#with Daemon('/data/vms/bin', '/var/run/omg-node.pid'):
+a = Api()
+l = Listener('core', 'tcp://127.0.0.1:5554')
+l.add_class(a)
+l.start()
+
+try:
+    while 1: time.sleep(0.5)
+except KeyboardInterrupt:
+    l.shutdown = True
+

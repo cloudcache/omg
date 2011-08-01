@@ -1,3 +1,4 @@
+from omg.storable import Storable
 
 class Volume(Storable):
     '''

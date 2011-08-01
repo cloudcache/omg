@@ -1,9 +1,10 @@
 from uuid import uuid4
-import omg
 
-storemap = {}
+from omg.store import Store
 
 class Storable(object):
+    storemap = {}
+
     def __init__(self, key=None, data=None, store=None):
         if not key:
             key = str(uuid4())
@@ -15,7 +16,7 @@ class Storable(object):
         self.store = store
 
     def _store(self):
-        self.store = omg.store.Store()
+        self.store = Store()
 
     def _load(self):
         self._store()
@@ -27,6 +28,7 @@ class Storable(object):
         return self.data[key]
 
     def __setitem__(self, key, value):
+        print key, value
         self.data[key] = value
 
     def __len__(self):

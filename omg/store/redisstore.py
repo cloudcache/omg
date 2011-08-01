@@ -1,12 +1,15 @@
 import redis as _redis
-import omg
+from omg.defaults import Defaults
+from omg.stateful import Stateful
+from omg.store.connection import Store
 
-class RedisStore(object):
+class RedisStore(Stateful):
     def __init__(self, host=None):
-        self.config = omg.config.Config()
-        if not host:
-            host = self.config['store_host']
-        self.r = _redis.Redis(host=host)
+        if not self._state():
+            self.config = Defaults()
+            if not host:
+                host = self.config['store_host']
+            self.r = _redis.Redis(host=host)
 
     def exists(self, klass, key, name):
         return self.r.hexists("%s:%s" % (klass, key), name)
@@ -19,6 +22,7 @@ class RedisStore(object):
         return omg.storable.storemap[klass](key, d)
 
     def set(self, klass, key, val):
+        print klass, key, val
         self.r.set('%s:%s' % (klass, key), val)
 
     def incr(self, klass, key):
@@ -38,4 +42,4 @@ class RedisStore(object):
         key = "%s:%s" % (klass, key)
         self.r.delete(key) 
 
-omg.store.Store.storemap['redis'] = RedisStore
+Store.register(Store, 'redis', RedisStore)

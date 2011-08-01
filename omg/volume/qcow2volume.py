@@ -1,11 +1,14 @@
 import subprocess
 import os
-import omg
 
-class QCOW2Volume(omg.storable.Storable):
+from omg.storable import Storable
+from omg.config import Config
+from omg.volume import Volume
+
+class QCOW2Volume(Storable):
     def __init__(self):
         super(QCOW2Volume, self).__init__()
-        self.conf = omg.config.Config()
+        self.conf = Config()
 
 
     def create(self, base=None):
@@ -45,5 +48,5 @@ class QCOW2Volume(omg.storable.Storable):
         super(QCOW2Volume, self).delete()
 
 
-omg.volume.Volume.volumemap['qcow2'] = QCOW2Volume
+Volume.register(Volume, 'qcow2', QCOW2Volume)
 

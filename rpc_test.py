@@ -106,12 +106,25 @@ class Vm(Command):
         ''' Destroy a vm. '''
         r = self.rpc.call('vm_destroy', {'name': name})
         print r
+    
+    def get(self, name):
+        ''' Get a vm. '''
+        r = self.rpc.call('vm_get', {'name': name})
+        tpl = "{key:20}{value}"
+        print tpl.format(key='KEY', value='VALUE')
+        for k,v in r['return'].items():
+            print tpl.format(key=k+':', value=v)
 
     def delete(self, name):
         ''' Delete a vm. '''
         r = self.rpc.call('vm_delete', {'name': name})
         print r
 
+    def edit(self, name, key, value):
+        ''' Edit a vm value '''
+        r = self.rpc.call('vm_edit', {'name': name, 'key': key,
+            'value': value})
+        print r
 
 class Config(Command):
     ''' Config Manager '''

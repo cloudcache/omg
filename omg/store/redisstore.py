@@ -1,4 +1,5 @@
 import redis as _redis
+
 from omg.defaults import Defaults
 from omg.stateful import Stateful
 from omg.store.connection import Store
@@ -22,7 +23,6 @@ class RedisStore(Stateful):
         return omg.storable.storemap[klass](key, d)
 
     def set(self, klass, key, val):
-        print klass, key, val
         self.r.set('%s:%s' % (klass, key), val)
 
     def incr(self, klass, key):
@@ -31,7 +31,6 @@ class RedisStore(Stateful):
     def obj(self, obj):
         key = "%s:%s" % (obj.__class__.__name__, obj.key)
         for k,v in obj.data.items():
-            print '%s : %s : %s' % (key, k, v)
             self.r.hset(key, k, v)
     
     def remove(self, klass, key, field):
@@ -43,3 +42,4 @@ class RedisStore(Stateful):
         self.r.delete(key) 
 
 Store.register(Store, 'redis', RedisStore)
+

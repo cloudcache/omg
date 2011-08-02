@@ -24,22 +24,42 @@ class Api(object):
         return ret
 
     def vm_get(self, args):
-        return self.ping(args)
+        vm = VM(key=args['name'])
+        vm._load()
+        return vm.data
+
+    def vm_edit(self, args):
+        vm = VM(key=args['name'])
+        vm._load()
+        vm[args['key']] = args['value']
+        vm.save()
+        vm.update_xml()
+        return vm[args['key']]
 
     def vm_create(self, args):
-        return self.ping(args)
+        vm = VM()
+        return vm.create(name=args['name'], ram=args['ram'], cpus=args['cpus'],
+            base=args['base'])
 
     def vm_start(self, args):
-        return self.ping(args)
+        vm = VM(key=args['name'])
+        return vm.start()
 
     def vm_stop(self, args):
-        return self.ping(args)
+        vm = VM(key=args['name'])
+        return vm.stop()
 
     def vm_destroy(self, args):
-        return self.ping(args)
+        vm = VM(key=args['name'])
+        return vm.destroy()
 
     def vm_restart(self, args):
-        return self.ping(args)
+        vm = VM(key=args['name'])
+        return vm.restart()
+
+    def vm_delete(self, args):
+        vm = VM(key=args['name'])
+        return vm.delete()
 
     def config_set(self, args):
         self.config[args['key']] = args['value']

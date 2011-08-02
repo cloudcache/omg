@@ -2,6 +2,7 @@ import os
 import subprocess
 
 import omg.util as util
+from omg.log import Log
 from omg.vm.vms import Vms
 from omg.image import Images
 from omg.volume import Volume
@@ -57,6 +58,7 @@ class VM(Storable):
     def __init__(self, key=None, data=None):
         super(VM, self).__init__(key, data)
         self.conf = Config()
+        self.log = Log()
         self.hv = Hypervisor()
 
     def create(self, base=None, cpus=None, ram=None, name=None, ip=None, 
@@ -64,10 +66,10 @@ class VM(Storable):
         self._store()
 
         if not name:
-            print "Missing name"
+            self.log.debug("Missing name")
             return 
         if self.store.exists("Vms", "active", name):
-            print "VM Already Exists"
+            self.log.debug("VM Already Exists")
             return
 
         # set defaults
@@ -78,7 +80,7 @@ class VM(Storable):
         if not ram:
             ram = self.conf['vm_default_ram']
         if not vnc:
-            vnc = self.conf.incr('vnc')
+            vnc = 5900+self.conf.incr('vnc')
         if not mac:
             mac = util.uniq_mac()
 
@@ -97,21 +99,13 @@ class VM(Storable):
    
         self.data['image'] = img.key
        
-        print self.data
+        self.log.debug(self.data)
 
-        t = {}
-        t.update(self.data)
-        t['key'] = self.key
-        t['path'] = self.conf['image_path']
-        domain = DOMAIN_TPL % t
-        print domain 
+        domain = self.xml()
+        self.log.debug(domain)
 
-        xmld = "%s/%s.xml" % (self.conf['domain_xml_path'], self.key)
-        with open(xmld, 'w') as fp:
-            fp.write(domain)
-            os.chmod(xmld, 0744)
-        print self.data
-        
+        self.update_xml()
+
         vms = Vms('active')
         vms[self.data['name']] = self.key
 
@@ -119,27 +113,49 @@ class VM(Storable):
         self.save()
         img.save()
         vms.save()
+       
+    def update_xml(self):
+        xmld = "%s/%s.xml" % (self.conf['domain_xml_path'], self.key)
+        with open(xmld, 'w') as fp:
+            fp.write(self.xml())
+            os.chmod(xmld, 0744)
+        self.log.debug(self.data)
+
+    def xml(self):
+        if not self.data:
+            self._load()
+        t = {}
+        t.update(self.data)
+        t['key'] = self.key
+        t['path'] = self.conf['image_path']
+        self.log.debug(t)
+        domain = DOMAIN_TPL % t
+        return domain
 
     def start(self):
-        self.hv.start(self.key)   
+        self.hv.start(self)   
 
     def stop(self):
         self.hv.stop(self.key)   
      
     def destroy(self):
         self.hv.destroy(self.key)
+        self.hv.undefine(self.key)
 
     def delete(self):
         self._load()
         try:
             self.hv.undefine(self.key)
+        except:
+            pass
+        try:
             xmld = "%s/%s.xml" % (self.conf['domain_xml_path'], self.key)
             os.unlink(xmld)
         except:
             pass
         vms = Vms('active')
-        print self.key
-        print self.data
+        self.log.debug(self.key)
+        self.log.debug(self.data)
         vms.remove(self.data['name'])
         img = Volume(self.data['image'])
         img.delete()

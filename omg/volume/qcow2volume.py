@@ -1,12 +1,16 @@
 import subprocess
 import os
-import omg
 
-class QCOW2Volume(omg.storable.Storable):
-    def __init__(self):
-        super(QCOW2Volume, self).__init__()
-        self.conf = omg.config.Config()
+from omg.storable import Storable
+from omg.config import Config
+from omg.volume import Volume
+from omg.log import Log
 
+class QCOW2Volume(Storable):
+    def __init__(self, key=None):
+        super(QCOW2Volume, self).__init__(key)
+        self.conf = Config()
+        self.log = Log()
 
     def create(self, base=None):
         # basepath should be pulled from the base image Volume() object
@@ -16,7 +20,7 @@ class QCOW2Volume(omg.storable.Storable):
         imgcmd = ['qemu-img', 'create', '-b', basepath, '-f', 'qcow2', imgpath]
         retcode = subprocess.call(imgcmd)
         if retcode != 0:
-            print "Unable to create image"
+            self.log.debug("Unable to create image")
             return
         self.data['path'] = imgpath
 
@@ -45,5 +49,5 @@ class QCOW2Volume(omg.storable.Storable):
         super(QCOW2Volume, self).delete()
 
 
-omg.volume.Volume.volumemap['qcow2'] = QCOW2Volume
+Volume.register(Volume, 'qcow2', QCOW2Volume)
 

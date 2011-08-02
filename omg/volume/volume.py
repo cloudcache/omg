@@ -1,19 +1,7 @@
+from omg.config import Config
+from omg.factory import Factory
 
-class Volume(Storable):
-    '''
-    '<uuid>': {
-        'format': <str>
-        'mounted': <bool>
-        'device': <str>
-    }
-    '''
-
-    def __init__(self, key=None):
-        super(Volume, self).__init__(key)
-
-    def mount():
-        pass
-
-    def umount():
-        pass
+class Volume(Factory):
+    configname = 'volume_type'
+    configsource = Config()
 

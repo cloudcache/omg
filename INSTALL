@@ -4,7 +4,14 @@ hypvisor and omg tools must reside on the same server but the datastore can be
 on another host is so desired.
 
 Install dependencies:
-    apt-get install python-redis redis-server python-libvirt qemu-kvm libvirt-bin
+    apt-get install python-redis python-libvirt qemu-kvm libvirt-bin
+    # The version of redis in debian squeeze is too old and doesn't support some of the functionality required by omg so go grab the version from weezy for your platform and install it.
+    # http://packages.debian.org/wheezy/redis-server
+
+    apt-get install python-setuptools
+
+    ./autogen.sh && ./configure && make && make install && ldconfig
+    easy_install pyzmq
 
 Configure redis:
     Since you probably want your database to persist and as currently there is no 

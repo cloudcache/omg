@@ -1,0 +1,34 @@
+#!/usr/bin/python -u
+
+import sys
+import time
+import signal
+
+sys.path.insert(0, '../')
+
+#from omg.daemonize import Daemon
+from omg.rpc import Listener
+from omg.core import Api
+from omg.log import Log
+
+#ctx = Daemon('/data/vms/bin', '/var/run/omg-core.pid')
+#ctx.stdout = open('/var/log/omg/stdout', 'a')
+#ctx.stderr = open('/var/log/omg/stderr', 'a')
+    
+l = Listener('core', 'tcp://127.0.0.1:5554')
+#ctx.signals({signal.SIGTERM: l.shut,
+#             signal.SIGINT: l.shut})
+
+#with ctx:
+lg = Log()
+a = Api()
+a.log = Log()
+lg.debug("Lets get going")
+lg.debug("Created API Object %r" % a)
+lg.debug("Created RPC Listener Obect %r" % l)
+l.add_class(a)
+l.log = lg
+l.start()
+
+lg.debug("Started RPC Listener thread")
+while not l.shutdown: time.sleep(0.5)

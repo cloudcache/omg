@@ -1,14 +1,6 @@
-import storable 
-import vm 
-import vms 
-import volume 
-import volume.qcow2volume
-import guest 
-import store
-import store.redisstore
-import config
-import images
-import hypervisor
-import util
-
-__all__ = ["volume", "guest", "store", "vm", "vms", "hypervisor"]
+import omg.vm as vm
+import omg.store as store
+import omg.image as image
+import omg.hypervisor as hypervisor
+import omg.config as config
+import omg.guest as guest    

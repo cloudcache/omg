@@ -1,15 +1,5 @@
-#!/usr/bin/env python
-''' Frontend tool for omg '''
-
-# shut up pylint
-#pylint: disable=R0201
-#pylint: disable=C0103
-
 import os
 import sys
-import redis
-import shutil
-import os.path
 import inspect
 import traceback
 
@@ -17,18 +7,12 @@ BINPATH = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(0, BINPATH)
 DEBUG = os.environ.has_key('DEBUG')
 
-from omg.config import Config
-from omg.store import Store
-from omg.vm import VM
-from omg.vm import Vms
-from omg.volume import Volume
-from omg.image import Images
+from omg.rpc import Sender
 
 class Command(object):
     ''' Command parent class '''
     def __init__(self):
-        self.config = Config()
-        self.store = Store()
+        self.rpc = Sender('core')
 
     @classmethod
     def help(cls):
@@ -49,34 +33,35 @@ class Command(object):
             print >> sys.stderr, '        ', func.__doc__.strip()
 
 
+class Help(Command):
+    ''' Help Manager '''
+    @classmethod
+    def help(cls):
+        ''' This help '''
+        super(Help, cls).help()
+        for key, val in init_cmdmap().items():
+            if key != 'help':
+                val.help()
+
+
 class Base(Command):
     ''' Base image manager '''
     def create(self, name, path):
         ''' Create base image. '''
-        img = Volume()
-        img['name'] = name
-
-        if self.store.exists("Images", "base", img['name']):
-            print "base image already exists"
-            return
-
-        img.save()
-        print "base uuid: %s" % img.key
-        print img
-        print img.key
-        base = Images('base')
-        base[img['name']] = img.key
-        base.save()
-        shutil.copy(path, "%s/%s.img" % (self.config['base_path'], img.key))
+        r = self.rpc.call('image_create', {'type': 'base', 'name': name, 
+            'path': path})
+        print r
 
     def list(self):
         ''' List existing images. '''
+        r = self.rpc.call('image_list', {'type': 'base'})
         imgs = Images('base')
-        print imgs
+        print r
 
     def delete(self, name):
         ''' Delete a base image. '''
-        print "name: ", name
+        r = self.rpc.call('image_delete', {'name': name})
+        print r
 
 
 class Image(Command):
@@ -86,88 +71,98 @@ class Image(Command):
 
 class Vm(Command):
     ''' Vm manager '''
+
     def list(self):
-        ''' List current vms. '''
+        ''' List existing vms. '''
+        r = self.rpc.call('vm_list', 'active')
         tpl = "{name:20}{uuid:40}{cpus:6}{ram:5}{vnc:8}{state:7}{ip:5}"
-        vms = Vms('active')
         print tpl.format(name="NAME", uuid="UUID", cpus="CPUS", ram="RAM",
             vnc="VNC", state="STATE", ip="IP")
-        for _, val in vms.items():
-            temp = {}
-            vm = VM(val)
-            vm._load()
-            temp['uuid'] = vm.key
-            temp.update(vm.data)
-            temp['vnc'] = ":%d" % (5900+int(temp['vnc']))
-            if temp['ip'] == 'None':
-                temp['ip'] = 'DHCP'
-            print tpl.format(**temp)
+        for i in r['return']:
+            print tpl.format(**i)
 
     def create(self, name, ram=None, cpus=None, base=None):
         ''' Create a new vm. '''
-        vm = VM()
-        vm.create(name=name, ram=ram, cpus=cpus, base=base)
+        r = self.rpc.call('vm_create', {'name': name, 'ram': ram, 'cpus': cpus, 
+            'base': base})
+        print r
 
     def restart(self, name):
         ''' Restart a vm. '''
-        vm = VM(key=name)
-        print vm.stop()
-        print vm.start()
+        print self.stop(name)
+        print self.start(name)
 
     def start(self, name):
         ''' Start a vm. '''
-        vm = VM(key=name)
-        print vm.start()
+        r = self.rpc.call('vm_start', {'name': name})
+        print r
 
     def stop(self, name):
         ''' Stop a vm. '''
-        vm = VM(key=name)
-        print vm.stop()
+        r = self.rpc.call('vm_stop', {'name': name})
+        print r
 
     def destroy(self, name):
         ''' Destroy a vm. '''
-        vm = VM(key=name)
-        print vm.destroy()
+        r = self.rpc.call('vm_destroy', {'name': name})
+        print r
+    
+    def get(self, name):
+        ''' Get a vm. '''
+        r = self.rpc.call('vm_get', {'name': name})
+        tpl = "{key:20}{value}"
+        print tpl.format(key='KEY', value='VALUE')
+        for k,v in r['return'].items():
+            print tpl.format(key=k+':', value=v)
 
     def delete(self, name):
         ''' Delete a vm. '''
-        vm = VM(key=name)
-        print vm.delete()
+        r = self.rpc.call('vm_delete', {'name': name})
+        print r
 
-# This has a 'K' because it's more raw that way...
-# It will be renamed back to the 'correct' spelling once this tool isn't
-# directly hitting everything and is actually using the rpc interface.
-class Konfig(Command):
+    def edit(self, name, key, value):
+        ''' Edit a vm value '''
+        r = self.rpc.call('vm_edit', {'name': name, 'key': key,
+            'value': value})
+        print r
+
+class Config(Command):
     ''' Config Manager '''
     def set(self, key, value):
         ''' Set a configuration value. '''
-        self.config[key] = value
-        self.config.save()
-        print self.config[key]
+        r = self.rpc.call('config_set', {'key': key, 'value': value})
+        print r
 
-    def get(self):
+    def get(self, key=None):
         ''' Get configuration values. '''
-        print self.config
+        r = self.rpc.call('config_get', {'key': key})
+        tpl = "{key:20}{value}"
+        print tpl.format(key='KEY', value='VALUE')
+        for k,v in r['return'].items():
+            print tpl.format(key=k+':', value=v)
 
 
-class Help(Command):
-    ''' Help Manager '''
-    @classmethod
-    def help(cls):
-        ''' This help '''
-        super(Help, cls).help()
-        for key, val in COMMAND_MAP.items():
-            if key != 'help':
-                val.help()
+class Node(Command):
+    ''' Node Manager '''
+    def list(self):
+        print self.rpc.call('node_list')
+
+    def get(self, name):
+        print self.rpc.call('node_get', {'name': name})
+    
+    def activate(self, name):
+        print self.rpc.call('node_activate', {'name': name})
+
+    def deactivate(self, name):
+        print self.rpc.call('node_deactivate', {'name': name})
 
 
-COMMAND_MAP = {
-    'base': Base,
-    'image': Image,
-    'vm': Vm,
-    'config': Konfig,
-    'help': Help
-}
+def init_cmdmap():
+    ''' build dict of all available Command subclasses '''
+    cmap = {}
+    for sub in Command.__subclasses__():
+        cmap[sub.__name__.lower()] = sub
+    return cmap
 
 def arg_count(func):
     ''' Get number of arguments for a function '''
@@ -205,13 +200,14 @@ def main(argv):
     if len(argv) < 1:
         display_help("Missing Command", Help)
 
+    cmdmap = init_cmdmap()
     cmd = argv.pop(0)
 
     if cmd == 'display_help':
         display_help("Help", Help, 0)
 
     try:
-        command = COMMAND_MAP[cmd]()
+        command = cmdmap[cmd]()
     except KeyError:
         if DEBUG:
             traceback.print_exc(file=sys.stderr)

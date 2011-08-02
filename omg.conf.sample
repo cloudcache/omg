@@ -1,4 +1,6 @@
 { 
     "store_type": "redis",
-    "store_host": "127.0.0.1"
+    "store_host": "127.0.0.1",
+    "rpc_type": "zmq",
+    "log_type": "file"
 }

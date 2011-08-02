@@ -39,7 +39,7 @@ class Help(Command):
     def help(cls):
         ''' This help '''
         super(Help, cls).help()
-        for key, val in COMMAND_MAP.items():
+        for key, val in init_cmdmap().items():
             if key != 'help':
                 val.help()
 
@@ -144,14 +144,12 @@ class Node(Command):
         print self.rpc.call('node_deactivate', {'name': name})
 
 
-COMMAND_MAP = {
-    'base': Base,
-    'image': Image,
-    'vm': Vm,
-    'config': Config,
-    'node': Node,
-    'help': Help
-}
+def init_cmdmap():
+    ''' build dict of all available Command subclasses '''
+    cmap = {}
+    for sub in Command.__subclasses__():
+        cmap[sub.__name__.lower()] = sub
+    return cmap
 
 def arg_count(func):
     ''' Get number of arguments for a function '''
@@ -189,13 +187,14 @@ def main(argv):
     if len(argv) < 1:
         display_help("Missing Command", Help)
 
+    cmdmap = init_cmdmap()
     cmd = argv.pop(0)
 
     if cmd == 'display_help':
         display_help("Help", Help, 0)
 
     try:
-        command = COMMAND_MAP[cmd]()
+        command = cmdmap[cmd]()
     except KeyError:
         if DEBUG:
             traceback.print_exc(file=sys.stderr)

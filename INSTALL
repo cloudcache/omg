@@ -5,12 +5,19 @@ on another host is so desired.
 
 Install dependencies:
     apt-get install python-redis python-libvirt qemu-kvm libvirt-bin
-    # The version of redis in debian squeeze is too old and doesn't support some of the functionality required by omg so go grab the version from weezy for your platform and install it.
+    # The version of redis in debian squeeze is too old and doesn't support some
+    # of the functionality required by omg so go grab the version from weezy for
+    # your platform and install it.
     # http://packages.debian.org/wheezy/redis-server
 
-    apt-get install python-setuptools
-
+    # Install 0mq
+    wget http://download.zeromq.org/zeromq-2.1.7.tar.gz
+    tar xf zeromq-2.1.7.tar.gz
+    cd zeromq-2.1.7
     ./autogen.sh && ./configure && make && make install && ldconfig
+    
+    # Install 0mq python bindings 
+    apt-get install python-setuptools
     easy_install pyzmq
 
 Configure redis:
@@ -23,18 +30,22 @@ Configure redis:
 
 Create directories:
     mkdir -p /var/lib/omg/{cow,base,domains}
+    mkdir /var/log/omg
 
 Install omg tools:
     cd /var/lib/omg
     git clone http://github.com/nils42/omg.git bin
-	ln -s /var/lib/omg/bin/omg.py /usr/bin/omg
+	ln -s /var/lib/omg/omg.py /usr/bin/omg
+    ln -s /var/lib/omg/bin/omg-core /usr/sbin/omg-core
 
 Configuration File:
 REDIS_HOST=127.0.0.1
 cat > /var/lib/omg/bin/omg.conf <<EOF
 { 
        "store_type": "redis",
-       "store_host": "$REDIS_HOST"
+       "store_host": "$REDIS_HOST",
+       "rpc_type": "zmq",
+       "log_type": "file"
 }
 EOF
 
@@ -49,6 +60,14 @@ Setup database:
     omg config set 'image_path' '/var/lib/omg/cow'
     omg config set 'base_path' '/var/lib/omg/base'
     omg config set 'domain_xml_path' '/var/lib/omg/domains'
+
+Start daemons:
+
+    As currently there are no init scripts you will need to run the daemons 
+    manually.
+
+    screen
+    omg-core
 
 Create initial base image:
     example for Debian Squeeze:

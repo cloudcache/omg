@@ -6,36 +6,40 @@ import threading
 from omg.rpc import Sender
 from omg.rpc import Registry
 from omg.rpc import Listener
-from omg.log import Log
+from omg.log.api import debug
 
 class ZMQListener(threading.Thread):
     def __init__(self, service, bind):
-        self.ctx = zmq.Context()
-        self.sock = self.ctx.socket(zmq.REP)
-        self.sock.bind(bind)
+        super(ZMQListener, self).__init__()
+        self.bind = bind
         self.service = service
-        self.log = Log()
         self.shutdown = False
         self.handlers = {}
         Registry()[service] = bind
-        super(ZMQListener, self).__init__()
+        self.daemon = True
+
+    def _setup(self):
+        self.ctx = zmq.Context()
+        self.sock = self.ctx.socket(zmq.REP)
+        self.sock.bind(self.bind)
 
     def add_handler(self, request, callback):
         self.handlers[request] = callback
 
     def add_class(self, cls):
-        self.log.debug("Registered API Class: %r" % cls)
+        debug("Registered API Class: %r" % cls)
         for m in dir(cls):
             a = getattr(cls, m)
             if callable(a):
                 self.handlers[m] = a
 
     def shut(self, a, b):
-        self.log.debug("Shutting down")
+        debug("Shutting down")
         self.shutdown = True
 
     def run(self):
-        self.log.debug("Starting ZMQ Listener")
+        debug("Starting ZMQ Listener")
+        self._setup()
         while not self.shutdown:
             resp = {}
             resp['exception'] = False
@@ -43,14 +47,14 @@ class ZMQListener(threading.Thread):
                 msg = json.loads(self.sock.recv(flags=zmq.NOBLOCK))
             except zmq.ZMQError:
                 continue
-            self.log.debug("received: " + str(msg))
+            debug("received: " + str(msg))
             if not self.handlers.has_key(msg['method']):
-                self.log.debug("no handler for request type")
+                debug("no handler for request type")
                 continue
             try:
                 resp['return'] = self.handlers[msg['method']](msg['args'])
             except Exception:
-                self.log.debug("unhandled exception while processing request")
+                debug("unhandled exception while processing request")
                 resp['return'] = traceback.format_exc()
                 resp['exception'] = True
     

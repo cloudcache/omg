@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python
 
 import sys
 import time
@@ -6,29 +6,45 @@ import signal
 
 sys.path.insert(0, '../')
 
-#from omg.daemonize import Daemon
+import os
+import daemon
+import lockfile
+
 from omg.rpc import Listener
 from omg.core import Api
-from omg.log import Log
+from omg.log.api import setup, debug, open_files
 
-#ctx = Daemon('/data/vms/bin', '/var/run/omg-core.pid')
-#ctx.stdout = open('/var/log/omg/stdout', 'a')
-#ctx.stderr = open('/var/log/omg/stderr', 'a')
-    
+lock = lockfile.FileLock('/var/run/omg-core.pid')
+ctx = daemon.DaemonContext(working_directory='/data/vms/bin') 
+
+setup('core')
 l = Listener('core', 'tcp://127.0.0.1:5554')
-#ctx.signals({signal.SIGTERM: l.shut,
-#             signal.SIGINT: l.shut})
+ctx.signal_map = {signal.SIGTERM: l.shut, 
+                  signal.SIGINT: l.shut}
+ctx.files_preserve = open_files()
 
-#with ctx:
-lg = Log()
-a = Api()
-a.log = Log()
-lg.debug("Lets get going")
-lg.debug("Created API Object %r" % a)
-lg.debug("Created RPC Listener Obect %r" % l)
-l.add_class(a)
-l.log = lg
-l.start()
+debug("Entering daemon Context")
+with ctx:
+    try:
+        lock.acquire(timeout=0)
+    except lockfile.AlreadyLocked:
+        debug("Unable to lock pid file. Daemon already running?")
+        sys.exit(1)
 
-lg.debug("Started RPC Listener thread")
-while not l.shutdown: time.sleep(0.5)
+    try:
+        with open(lock.path, 'w') as f:
+            f.write(str(os.getpid()))
+        debug("In daemon context: %d" % os.getpid())
+        a = Api()
+        debug("Lets get going")
+        debug("Created API Object %r" % a)
+        debug("Created RPC Listener Obect %r" % l)
+        l.add_class(a)
+        l.start()
+        debug("Started RPC Listener thread")
+        while not l.shutdown: time.sleep(1)
+    except Exception:
+        debug("Unhandled Exception")
+    lock.release()
+
+debug("Shutdown Complete")

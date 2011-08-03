@@ -28,7 +28,6 @@ class Storable(object):
         return self.data[key]
 
     def __setitem__(self, key, value):
-        print key, value
         self.data[key] = value
 
     def __len__(self):

@@ -14,7 +14,6 @@ class ZMQListener(threading.Thread):
         super(ZMQListener, self).__init__()
         self.bind = bind
         self.service = service
-        self.shutdown = False
         self.handlers = {}
         Registry()[service] = bind
         self.daemon = True
@@ -38,7 +37,7 @@ class ZMQListener(threading.Thread):
 
     def shut(self, a, b):
         debug("Shutting down")
-        self.shutdown = True
+        self.shutdown.set()
 
     def is_shutdown(self):
         return self.done.is_set()
@@ -50,7 +49,7 @@ class ZMQListener(threading.Thread):
             resp = {}
             resp['exception'] = False
             try:
-                msg = json.loads(self.sock.recv(zmq.NOBLOCK))
+                msg = json.loads(self.sock.recv(flags=zmq.NOBLOCK))
             except zmq.ZMQError:
                 time.sleep(0.001)
                 continue

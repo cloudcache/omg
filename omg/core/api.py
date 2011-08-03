@@ -1,12 +1,11 @@
 from omg.vm import VM
 from omg.vm import Vms
-from omg.log import Log
+from omg.log.api import debug
 from omg.config import Config
 
 class Api(object):
     def __init__(self):
         self.config = Config()
-        self.log = Log()
 
     def ping(self, msg):
         return msg

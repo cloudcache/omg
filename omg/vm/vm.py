@@ -2,7 +2,7 @@ import os
 import subprocess
 
 import omg.util as util
-from omg.log import Log
+from omg.log.api import debug
 from omg.vm.vms import Vms
 from omg.image import Images
 from omg.volume import Volume
@@ -58,7 +58,6 @@ class VM(Storable):
     def __init__(self, key=None, data=None):
         super(VM, self).__init__(key, data)
         self.conf = Config()
-        self.log = Log()
         self.hv = Hypervisor()
 
     def create(self, base=None, cpus=None, ram=None, name=None, ip=None, 
@@ -66,10 +65,10 @@ class VM(Storable):
         self._store()
 
         if not name:
-            self.log.debug("Missing name")
+            debug("Missing name")
             return 
         if self.store.exists("Vms", "active", name):
-            self.log.debug("VM Already Exists")
+            debug("VM Already Exists")
             return
 
         # set defaults
@@ -99,10 +98,10 @@ class VM(Storable):
    
         self.data['image'] = img.key
        
-        self.log.debug(self.data)
+        debug(self.data)
 
         domain = self.xml()
-        self.log.debug(domain)
+        debug(domain)
 
         self.update_xml()
 
@@ -119,7 +118,7 @@ class VM(Storable):
         with open(xmld, 'w') as fp:
             fp.write(self.xml())
             os.chmod(xmld, 0744)
-        self.log.debug(self.data)
+        debug(self.data)
 
     def xml(self):
         if not self.data:
@@ -128,7 +127,7 @@ class VM(Storable):
         t.update(self.data)
         t['key'] = self.key
         t['path'] = self.conf['image_path']
-        self.log.debug(t)
+        debug(t)
         domain = DOMAIN_TPL % t
         return domain
 
@@ -154,8 +153,8 @@ class VM(Storable):
         except:
             pass
         vms = Vms('active')
-        self.log.debug(self.key)
-        self.log.debug(self.data)
+        debug(self.key)
+        debug(self.data)
         vms.remove(self.data['name'])
         img = Volume(self.data['image'])
         img.delete()

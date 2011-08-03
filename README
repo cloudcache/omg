@@ -1,7 +1,17 @@
 OMG - Open Managed Grid
 
-An easy to use grid orchestration system build on top of libvirt and redis.
+An easy to use grid orchestration system build on top of libvirt, zmq, and redis.
 
-The initial versions of this tool are very crude and specific to my development environment. I am publicly posting these early versions to be able to track the code all the way back to the beginning. At this point omg is probably only useful for my particular setup but as time goes on the bits that rely on how I have stuff setup will be factored out.
+The initial versions of this tool are very crude and specific to my development
+environment. I am publicly posting these early versions to be able to track the 
+code all the way back to the beginning. At this point omg is probably only 
+useful for my particular setup but as time goes on the bits that rely on how I 
+have stuff setup will be factored out.
 
-The intent of the system is to provide a easy to install, easy to maintain, and easy to use tool for keeping track of virtual machines across a group of host systems.
+The intent of the system is to provide a easy to install, easy to maintain, and 
+easy to use tool for keeping track of virtual machines across a group of host 
+systems.
+
+Since this platform is in heavy development do not expect "releases" or for me
+not to break everything in master. I do my best to leave master in a state that
+works or at least appears to work, but no promises.

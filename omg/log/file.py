@@ -1,23 +1,27 @@
-from omg.log import Log
+import traceback
+from omg.log import hoses
+from omg.log.levels import LEVEL_STR
 
 class FileLog():
-    def __init__(self, path=None):
+    def __init__(self, service=None, path=None):
+        if not service:
+            service = 'generic'
         if not path:
-            path = '/var/log/omg/omg.log'
-        self.path = path
-        self.fp = None
+            path = '/var/log/omg'
+        self.path = '%s/omg-%s.log' % (path, service)
+        self.open()
 
     def write(self, data):
-        if not self.fp:
-            self.open()
         self.fp.write(data)
         self.fp.flush()
-
-    def debug(self, msg):
-        self.write("DEBUG: %s\n" % msg)
 
     def open(self):
         self.fp = open(self.path, 'a+')
 
-Log.register(Log, 'file', FileLog)
+    def drip(self, msg, level):
+        self.write("%s: %s\n" % (LEVEL_STR[level], msg))
 
+    def open_files(self):
+        return [self.fp]
+
+hoses['file'] = FileLog

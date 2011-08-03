@@ -23,13 +23,14 @@ ctx.signal_map = {signal.SIGTERM: l.shut,
                   signal.SIGINT: l.shut}
 ctx.files_preserve = open_files()
 
+try:
+    lock.acquire(timeout=0)
+except lockfile.AlreadyLocked:
+    debug("Unable to lock pid file. Daemon already running?")
+    print "Unable to lock pid file. Daemon already running?"
+    sys.exit(1)
 debug("Entering daemon Context")
 with ctx:
-    try:
-        lock.acquire(timeout=0)
-    except lockfile.AlreadyLocked:
-        debug("Unable to lock pid file. Daemon already running?")
-        sys.exit(1)
 
     try:
         with open(lock.path, 'w') as f:
@@ -42,7 +43,7 @@ with ctx:
         l.add_class(a)
         l.start()
         debug("Started RPC Listener thread")
-        while not l.shutdown: time.sleep(1)
+        while not l.is_shutdown(): time.sleep(1)
     except Exception:
         debug("Unhandled Exception")
     lock.release()

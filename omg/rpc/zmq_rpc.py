@@ -1,5 +1,6 @@
 import zmq
 import json
+import time
 import traceback
 import threading
 
@@ -17,6 +18,8 @@ class ZMQListener(threading.Thread):
         self.handlers = {}
         Registry()[service] = bind
         self.daemon = True
+        self.shutdown = threading.Event()
+        self.done = threading.Event()
 
     def _setup(self):
         self.ctx = zmq.Context()
@@ -37,31 +40,37 @@ class ZMQListener(threading.Thread):
         debug("Shutting down")
         self.shutdown = True
 
+    def is_shutdown(self):
+        return self.done.is_set()
+
     def run(self):
         debug("Starting ZMQ Listener")
         self._setup()
-        while not self.shutdown:
+        while not self.shutdown.is_set():
             resp = {}
             resp['exception'] = False
             try:
-                msg = json.loads(self.sock.recv(flags=zmq.NOBLOCK))
+                msg = json.loads(self.sock.recv(zmq.NOBLOCK))
             except zmq.ZMQError:
+                time.sleep(0.001)
                 continue
             debug("received: " + str(msg))
             if not self.handlers.has_key(msg['method']):
                 debug("no handler for request type")
-                continue
-            try:
-                resp['return'] = self.handlers[msg['method']](msg['args'])
-            except Exception:
-                debug("unhandled exception while processing request")
-                resp['return'] = traceback.format_exc()
+                resp['return'] = 'unknown method'
                 resp['exception'] = True
+            else:
+                try:
+                    resp['return'] = self.handlers[msg['method']](msg['args'])
+                except Exception:
+                    debug("unhandled exception while processing request")
+                    resp['return'] = traceback.format_exc()
+                    resp['exception'] = True
     
             resp['method'] = msg['method']
             
             self.sock.send(json.dumps(resp))
-
+        self.done.set()
 
 class ZMQSender(object):
     def __init__(self, service):

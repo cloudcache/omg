@@ -49,6 +49,14 @@ cat > /var/lib/omg/bin/omg.conf <<EOF
 }
 EOF
 
+Start daemons:
+
+    As currently there are no init scripts you will need to run the daemons 
+    manually. The script will automatically daemonize itself and write it's logs
+    to /var/log/omg-<daemon>.log
+
+    omg-core
+
 Setup database:
 
     # If you want a different default ram or cpu values change these lines
@@ -60,14 +68,6 @@ Setup database:
     omg config set 'image_path' '/var/lib/omg/cow'
     omg config set 'base_path' '/var/lib/omg/base'
     omg config set 'domain_xml_path' '/var/lib/omg/domains'
-
-Start daemons:
-
-    As currently there are no init scripts you will need to run the daemons 
-    manually.
-
-    screen
-    omg-core
 
 Create initial base image:
     example for Debian Squeeze:

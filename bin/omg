@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 import inspect
 import traceback
 try:   
@@ -162,7 +163,12 @@ class Config(Command):
 class Node(Command):
     ''' Node Manager '''
     def list(self):
-        print self.rpc.call('node_list')
+        r = self.rpc.call('node_list', 'all')
+        tpl = "{uuid:40}{hostname:20}{checkin:30}{rpc_uri}"
+        print tpl.format(uuid="UUID", hostname="HOSTNAME", checkin="LAST CHECKIN", rpc_uri="RPC URI")
+        for n in r['return']:
+            n['checkin'] = time.ctime(float(n['checkin']))
+            print tpl.format(**n)
 
     def get(self, name):
         print self.rpc.call('node_get', {'name': name})

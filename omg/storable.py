@@ -43,6 +43,12 @@ class Storable(object):
             self._store()
         self.store.obj(self)
 
+    def reload(self):
+        if not self.data:
+            self._load()
+        else:
+            self.store.load(self, self.key)
+
     def items(self):
         if not self.data:
             self._load()
@@ -71,3 +77,13 @@ class Storable(object):
         self.data = {}
         self.key = None
 
+    def has_key(self, key):
+        if not self.data:
+            if not self.store:
+                self._store()
+            return self.store.exists(self, key)
+        else:
+            return self.data.has_key(key)
+
+    def item(self, key):
+        return self.store.item(self, key)

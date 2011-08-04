@@ -12,8 +12,9 @@ class RedisStore(Stateful):
                 host = self.config['store_host']
             self.r = _redis.Redis(host=host)
 
-    def exists(self, klass, key, name):
-        return self.r.hexists("%s:%s" % (klass, key), name)
+    def exists(self, obj, name):
+        key = "%s:%s" % (obj.__class__.__name__, obj.key)
+        return self.r.hexists(key, name)
 
     def load(self, obj, key):
         obj.data = self.r.hgetall("%s:%s" % (obj.__class__.__name__, key))
@@ -21,6 +22,10 @@ class RedisStore(Stateful):
     def get(self, klass, key):
         d = self.r.hgetall("%s:%s" % (klass, key))
         return omg.storable.storemap[klass](key, d)
+
+    def item(self, obj, key):
+        table = "%s:%s" % (obj.__class__.__name__, obj.key)
+        return self.r.hget(table, key)
 
     def set(self, klass, key, val):
         self.r.set('%s:%s' % (klass, key), val)

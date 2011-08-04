@@ -9,6 +9,15 @@ from omg.rpc import Registry
 from omg.rpc import Listener
 from omg.log.api import debug
 
+_ctx = None
+
+def get_context():
+    global _ctx
+    if not _ctx:
+        _ctx = zmq.Context()
+    return _ctx
+    
+
 class ZMQListener(threading.Thread):
     def __init__(self, service, bind):
         super(ZMQListener, self).__init__()
@@ -21,7 +30,7 @@ class ZMQListener(threading.Thread):
         self.done = threading.Event()
 
     def _setup(self):
-        self.ctx = zmq.Context()
+        self.ctx = get_context()
         self.sock = self.ctx.socket(zmq.REP)
         self.sock.bind(self.bind)
 
@@ -74,7 +83,7 @@ class ZMQListener(threading.Thread):
 class ZMQSender(object):
     def __init__(self, service):
         self.connect = Registry()[service]
-        self.ctx = zmq.Context()
+        self.ctx = get_context()
         self.sock = self.ctx.socket(zmq.REQ)
         self.sock.connect(self.connect)
 

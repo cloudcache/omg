@@ -9,6 +9,7 @@ from omg.volume import Volume
 from omg.config import Config
 from omg.storable import Storable
 from omg.hypervisor import Hypervisor
+from omg.scheduler import Scheduler
 
 DOMAIN_TPL = '''<domain type='kvm'>
   <name>%(name)s</name>
@@ -60,16 +61,18 @@ class VM(Storable):
         self.conf = Config()
         self.hv = Hypervisor()
 
-    def create(self, base=None, cpus=None, ram=None, name=None, ip=None, 
+    def create_db(self, base=None, cpus=None, ram=None, name=None, ip=None, 
         mac=None, vnc=None):
         self._store()
 
         if not name:
             debug("Missing name")
-            return 
-        if self.store.exists("Vms", "active", name):
+            return False
+        
+        vms = Vms('active')
+        if self.store.exists(vms, name):
             debug("VM Already Exists")
-            return
+            return False
 
         # set defaults
         if not base:
@@ -84,20 +87,32 @@ class VM(Storable):
             mac = util.uniq_mac()
 
         images = Images('base')
+        sched = Scheduler()
         self.data['base'] = images[base]
         self.data['cpus'] = cpus
         self.data['ram'] = ram
         self.data['ip'] = ip
         self.data['mac'] = mac
         self.data['vnc'] = vnc
-        self.data['state'] = 'off'
+        self.data['state'] = 'spawning'
         self.data['name'] = name
+        self.data['uuid'] = self.key
+        self.data['node'] = sched.get_node(self)
 
+        vms[self.data['name']] = self.key
+        vms.save()
+
+        self.save()
+        return True
+
+    def create(self):
+        self._load()
         img = Volume()
         img.create(self.data['base'])
    
         self.data['image'] = img.key
-       
+        self.data['state'] = 'off'
+
         debug(self.data)
 
         domain = self.xml()
@@ -105,13 +120,9 @@ class VM(Storable):
 
         self.update_xml()
 
-        vms = Vms('active')
-        vms[self.data['name']] = self.key
-
         self.hv.define(domain)
         self.save()
         img.save()
-        vms.save()
        
     def update_xml(self):
         xmld = "%s/%s.xml" % (self.conf['domain_xml_path'], self.key)

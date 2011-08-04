@@ -3,6 +3,7 @@
 import sys
 import time
 import signal
+import traceback
 
 sys.path.insert(0, '../')
 
@@ -22,10 +23,12 @@ if not ctx.check_pid():
     sys.exit(1)
 
 with ctx:
-    ctx.update_pid()
-    a = Api()
-    l.add_class(a)
-    l.start()
-    while not l.is_shutdown(): 
-        time.sleep(1)
-
+    try:
+        ctx.update_pid()
+        a = Api()
+        l.add_class(a)
+        l.start()
+        while not l.is_shutdown(): 
+            time.sleep(1)
+    except Exception:
+        debug(traceback.format_exc())

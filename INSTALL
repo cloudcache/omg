@@ -68,6 +68,7 @@ Setup database:
     omg config set 'image_path' '/var/lib/omg/cow'
     omg config set 'base_path' '/var/lib/omg/base'
     omg config set 'domain_xml_path' '/var/lib/omg/domains'
+    omg config set 'scheduler_type' 'noop'
 
 Create initial base image:
     example for Debian Squeeze:

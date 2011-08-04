@@ -3,17 +3,20 @@
 import sys
 import time
 import signal
+import traceback
 
 sys.path.insert(0, '../')
 
 from omg.daemonize import Daemon
 from omg.rpc import Listener
-from omg.node import Api
+from omg.node.api import Api
+from omg.node import register
 from omg.log.api import setup
 
 setup('node')
 ctx = Daemon('/data/vms/bin', '/var/run/omg-node.pid')
-l = Listener('node', 'tcp://127.0.0.1:5555')
+node = register('tcp://127.0.0.1:5555')
+l = Listener(node['uuid'], node['rpc_uri'])
 ctx.signal(signal.SIGTERM, l.shut)
 ctx.signal(signal.SIGINT, l.shut)
 
@@ -22,10 +25,12 @@ if not ctx.check_pid():
     sys.exit(1)
 
 with ctx:
-    ctx.update_pid()
-    a = Api()
-    l.add_class(a)
-    l.start()
-    while not l.is_shutdown():
-        time.sleep(1)
-
+    try:
+        ctx.update_pid()
+        a = Api()
+        l.add_class(a)
+        l.start()
+        while not l.is_shutdown():
+            time.sleep(1)
+    except Exception:
+        debug(traceback.format_exc())

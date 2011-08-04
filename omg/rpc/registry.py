@@ -11,6 +11,5 @@ class Registry(Stateful, Storable):
         super(Registry, self).__setitem__(k, v)
         self.save()
 
-
 Storable.storemap['Registry'] = Registry
 

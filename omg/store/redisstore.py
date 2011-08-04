@@ -30,8 +30,7 @@ class RedisStore(Stateful):
 
     def obj(self, obj):
         key = "%s:%s" % (obj.__class__.__name__, obj.key)
-        for k,v in obj.data.items():
-            self.r.hset(key, k, v)
+        self.r.hmset(key, obj.data)
     
     def remove(self, klass, key, field):
         key = "%s:%s" % (klass, key)

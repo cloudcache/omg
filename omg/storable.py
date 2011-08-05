@@ -87,3 +87,7 @@ class Storable(object):
 
     def item(self, key):
         return self.store.item(self, key)
+
+    def random(self):
+        return self.store.random(self)
+
